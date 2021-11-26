@@ -1,0 +1,46 @@
+resource_types:
+- name: pull-request
+  type: docker-image
+  source:
+    repository: teliaoss/github-pr-resource
+
+resources:
+- name: pull-request
+  type: pull-request
+  check_every: 24h
+  webhook_token: ((webhook-token))
+  source:
+    repository: shio-gg/lavadash
+    access_token: ((github-access-token))
+
+jobs:
+- name: test
+  plan:
+  - get: pull-request
+    trigger: true
+    version: every
+    params:
+      list_changed_files: true
+  - put: pr-status
+    resource: pull-request
+    params:
+      path: pull-request
+      status: pending
+    get_params: {skip_download: true}
+  - task: test
+    file: pull-request/ci/tasks/run-tests.yml
+    input_mapping:
+      source: pull-request
+    on_failure:
+      put: pr-status
+      resource: pull-request
+      params:
+        path: pull-request
+        status: failure
+      get_params: {skip_download: true}
+  - put: pr-status
+    resource: pull-request
+    params:
+      path: pull-request
+      status: success
+    get_params: {skip_download: true}

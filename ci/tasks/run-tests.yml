@@ -1,0 +1,18 @@
+platform: linux
+
+image_resource:
+  type: registry-image
+  source:
+    repository: ghcr.io/shio-gg/poetry
+    tag: 3.8.5
+    username: ((ghcr.username))
+    password: ((ghcr.token))
+
+caches:
+- path: venvs
+
+inputs:
+- name: source
+
+run:
+  path: source/ci/scripts/test.sh

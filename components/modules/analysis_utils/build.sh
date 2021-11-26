@@ -1,0 +1,1 @@
+poetry run dephell deps convert

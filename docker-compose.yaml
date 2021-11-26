@@ -1,0 +1,118 @@
+version: "3.8"
+
+volumes:
+  local_postgres_data: {}
+  local_postgres_data_backups: {}
+
+services:
+  # --- Runs Sentiment Analysis on scraped data then sends to Influx
+  analyzer:
+    image: 'blind-tornado-analyzer:latest'
+    build:
+      context: ./components
+      dockerfile: ./backend/analyzer/Dockerfile
+    network_mode: host
+    env_file:
+      - dev.env
+    expose:
+      - "5000"
+    depends_on:
+      - redis
+      - scraper
+      - influxdb
+    volumes:
+      - ./components/backend/analyzer:/components/backend/analyzer/
+      - ./components/modules/analysis_utils:/components/modules/analysis_utils
+  # --- REST API and Daemon for scraping Reddit/Twitter/News for specified keywords
+  scraper:
+    image: 'blind-tornado-scraper:latest'
+    build:
+      context: ./components
+      dockerfile: ./backend/scraper/Dockerfile
+    network_mode: host
+    env_file:
+      - dev.env
+    expose:
+      - "5100"
+    depends_on:
+      - redis
+    volumes:
+      - ./components/backend/scraper:/components/backend/scraper/
+      - ./components/modules/analysis_utils:/components/modules/analysis_utils
+  # --- Mostly used for PubSub
+  redis:
+    image: 'redis:6.0.6'
+    network_mode: host
+    expose:
+      - "6379"
+  influxdb:  # Time Series DB
+    image: influxdb:1.7-alpine
+    ports:
+      - '8086:8086'
+    volumes:
+      - influx-data:/var/lib/influxdb
+    env_file:
+      - dev.env
+  # --- Admin UI for InfluxDB
+  chronograf:
+    image: chronograf:latest
+    ports:
+      - '8888:8888'
+    volumes:
+      - chronograf-data:/var/lib/chronograf
+    depends_on:
+      - influxdb
+    env_file:
+      - dev.env
+  # --- Visualize data in InfluxDB
+  grafana:
+    image: grafana/grafana:latest
+    # NOTE: The `user` here _must_ match your $(id -u) for proper file permissions
+    user: "1000"
+    ports:
+      - '3000:3000'
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - grafana-provisioning:/etc/grafana/provisioning
+    depends_on:
+      - influxdb
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+  # --- Postgres
+  postgres:
+    build:
+      context: ./components/frontend/lavadash-ui
+      dockerfile: ./compose/production/postgres/Dockerfile
+    image: lavadash_production_postgres
+    container_name: postgres
+    volumes:
+      - local_postgres_data:/var/lib/postgresql/data:Z
+      - local_postgres_data_backups:/backups:z
+    env_file:
+      - dev.env
+  # --- Django UI
+  django:
+    build:
+      context: ./components/frontend/lavadash-ui
+      dockerfile: ./compose/local/django/Dockerfile
+    image: lavadash_local_django
+    container_name: django
+    depends_on:
+      - postgres
+    volumes:
+      - ./components/frontend/lavadash-ui:/app:z
+    env_file:
+      - dev.env
+    ports:
+      - "8000:8000"
+    command: /start
+
+
+volumes:
+  local_postgres_data:
+  local_postgres_data_backups:
+  grafana-provisioning:
+  grafana-data:
+  chronograf-data:
+  influx-data:

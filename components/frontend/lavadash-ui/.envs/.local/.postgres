@@ -1,0 +1,7 @@
+# PostgreSQL
+# ------------------------------------------------------------------------------
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+POSTGRES_DB=lavadash
+POSTGRES_USER=OXnYPYUgXTgexrhEPacLjmtUeROJPdlm
+POSTGRES_PASSWORD=wBAUHZGUAmS338haFx642jbrrxAxTQwRTUzz7LG5cBG9A6R3SsRoGvmtdwWZRgIZ
