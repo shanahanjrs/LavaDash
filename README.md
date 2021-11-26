@@ -1,7 +1,14 @@
 # DEPRECATED
 
 > This project is being open sourced while we work on other projects.
-> Project owners: @shanahanjrs @tysongg @aglovaile
+> 
+> Project owners:
+> 
+> @shanahanjrs
+> 
+> @tysongg
+> 
+> @aglovaile
 
 
 ### Dir structure
